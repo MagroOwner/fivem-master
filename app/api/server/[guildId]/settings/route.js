@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import getClientPromise from "@/lib/mongodb";
 
 export async function GET(req, { params }) {
-  const guildId = params.guildId;
-  const client = await clientPromise;
+  const { guildId } = await params;
+  const client = await getClientPromise();
   const db = client.db("dashboard");
 
   const doc = await db.collection("server_settings").findOne({ guildId });
@@ -11,10 +11,10 @@ export async function GET(req, { params }) {
 }
 
 export async function POST(req, { params }) {
-  const guildId = params.guildId;
+  const { guildId } = await params;
   const body = await req.json();
 
-  const client = await clientPromise;
+  const client = await getClientPromise();
   const db = client.db("dashboard");
 
   await db.collection("server_settings").updateOne(
