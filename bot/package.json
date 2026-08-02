@@ -1,20 +1,14 @@
 {
-  "name": "fivem-master-bot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node index.js",
-    "deploy": "node deploy-commands.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "discord.js": "^14.27.0",
-    "dotenv": "^17.4.2",
-    "mongoose": "^9.9.1"
+    "express": "^4.18.2",
+    "discord.js": "^14.13.0"
   }
 }

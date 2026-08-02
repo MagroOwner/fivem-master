@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import { REST, Routes } from 'discord.js';
+
 const router = express.Router();
-const { REST, Routes } = require('discord.js');
 
 const BOT_SECRET = process.env.BOT_SECRET;
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
@@ -79,4 +80,4 @@ router.post('/commands', express.json(), async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
