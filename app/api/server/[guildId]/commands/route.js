@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server";
-import { REST } from "discord.js";
+import { fetchBotCommands } from "@/dashboard/lib/commands";
 
-export async function GET(req, { params }) {
-  const guildId = params.guildId;
+// GET /api/server/[guildId]/commands -> [ { id, name, description, options } ]
+export async function GET(request, { params }) {
+  const { guildId } = await params;
 
   try {
-    // Use the bot token (same env var as other API routes)
-    const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_BOT_TOKEN);
-
-    const commands = await rest.get(
-      `/applications/${process.env.CLIENT_ID}/guilds/${guildId}/commands`
-    );
-
-    // Ensure we always return valid JSON content-type
-    return NextResponse.json(commands, { status: 200 });
+    const commands = await fetchBotCommands(guildId);
+    return NextResponse.json(commands);
   } catch (err) {
     console.error("[api/server/[guildId]/commands] error:", err);
-    return NextResponse.json({ error: "Failed to load commands" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch commands from bot" }, { status: 502 });
   }
 }
