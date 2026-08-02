@@ -1,71 +1,50 @@
-import { Client, GatewayIntentBits, Collection } from "discord.js";
-import express from "express";
-import { refreshSettings } from "./src/events/dashboardSync.js";
-import { loadSettings } from "./src/utils/loadSettings.js";
+import express from 'express';
+import internalCommands from './src/internalCommands.js';
 
-const app = express();
-app.use(express.json());
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages
-  ]
-});
-
-client.commands = new Collection();
-global.dashboardSettings = {}; // live settings cache
-
-// Load commands dynamically
-import fs from "fs";
-import path from "path";
-
-const commandsPath = path.join(process.cwd(), "src/commands");
-const categories = fs.readdirSync(commandsPath);
-
-for (const category of categories) {
-  const categoryPath = path.join(commandsPath, category);
-  const files = fs.readdirSync(categoryPath);
-
-  for (const file of files) {
-    const command = await import(`./src/commands/${category}/${file}`);
-    client.commands.set(command.default.name, command.default);
+async function tryImportBotEntrypoints() {
+  const candidates = ['./src/index.js', './src/main.js', './src/bot.js', './src/app.js'];
+  for (const p of candidates) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const mod = await import(p);
+      console.log(`Imported bot entry point: ${p}`);
+      // If the module exports an init function, call it
+      if (mod && typeof mod.init === 'function') {
+        try {
+          await mod.init();
+          console.log(`Called init() exported by ${p}`);
+        } catch (err) {
+          console.warn(`init() in ${p} threw:`, err);
+        }
+      }
+      return true;
+    } catch (err) {
+      // continue to next candidate
+    }
   }
+  console.warn('No bot entrypoint found among candidates. If you have a different entry file, edit bot/index.js to import it.');
+  return false;
 }
 
-// Dashboard sync webhook
-app.post("/bot-sync", async (req, res) => {
-  const { guildId } = req.body;
-  await refreshSettings(guildId);
-  res.json({ success: true });
+const app = express();
+
+// Parse JSON bodies for all routes
+app.use(express.json());
+
+// Mount internal routes under /internal
+app.use('/internal', internalCommands);
+
+// Health check
+app.get('/_/health', (req, res) => res.json({ ok: true, service: 'bot-http' }));
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Bot HTTP server listening on port ${PORT}`);
 });
 
-// Slash command handler
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
-
-  const guildId = interaction.guild.id;
-
-  // Load settings (cached or fresh)
-  const config =
-    global.dashboardSettings[guildId] ||
-    (global.dashboardSettings[guildId] = await loadSettings(guildId));
-
-  interaction.dashboardSettings = config.settings || {};
-
-  try {
-    await command.execute(interaction);
-  } catch (err) {
-    console.error(err);
-    interaction.reply("Error executing command.");
+// Try to import existing bot entrypoints so the bot client runs in the same process.
+tryImportBotEntrypoints().then((ok) => {
+  if (!ok) {
+    console.warn('Bot client was not automatically started. Ensure you import your bot entry file here.');
   }
 });
-
-client.login(process.env.BOT_TOKEN);
-
-// Start webhook server
-app.listen(3001, () => console.log("Bot sync webhook running on port 3001"));
