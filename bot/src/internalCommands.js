@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import { REST, Routes } from 'discord.js';
 
@@ -17,7 +20,6 @@ if (!DISCORD_TOKEN || !CLIENT_ID) {
 const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 
 // GET /internal/commands?guildId=<id>
-// Auth: X-BOT-SECRET header must match BOT_SECRET
 router.get('/commands', async (req, res) => {
   try {
     const incoming = req.header('X-BOT-SECRET');
@@ -26,16 +28,11 @@ router.get('/commands', async (req, res) => {
     }
 
     const guildId = req.query.guildId;
-    if (!DISCORD_TOKEN || !CLIENT_ID) {
-      return res.status(500).json({ error: 'Bot not configured (DISCORD_TOKEN / CLIENT_ID missing)' });
-    }
 
     let result;
     if (guildId) {
-      // fetch guild-specific commands
       result = await rest.get(Routes.applicationGuildCommands(CLIENT_ID, guildId));
     } else {
-      // fetch global application commands
       result = await rest.get(Routes.applicationCommands(CLIENT_ID));
     }
 
@@ -47,8 +44,6 @@ router.get('/commands', async (req, res) => {
 });
 
 // POST /internal/commands
-// Body: { commands: [ ... ], guildId?: "<id>" }
-// Auth: X-BOT-SECRET
 router.post('/commands', express.json(), async (req, res) => {
   try {
     const incoming = req.header('X-BOT-SECRET');
@@ -62,9 +57,6 @@ router.post('/commands', express.json(), async (req, res) => {
     }
 
     const guildId = req.body?.guildId;
-    if (!DISCORD_TOKEN || !CLIENT_ID) {
-      return res.status(500).json({ error: 'Bot not configured (DISCORD_TOKEN / CLIENT_ID missing)' });
-    }
 
     let result;
     if (guildId) {
