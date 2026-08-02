@@ -1,0 +1,8 @@
+dashboard/node_modules/
+dashboard/.next/
+bot/node_modules/
+bot/dist/
+bot/logs/
+bot/cache/
+*.env
+

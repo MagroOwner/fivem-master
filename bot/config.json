@@ -1,0 +1,8 @@
+{
+  "embedColor": 5861569,
+  "permissions": {
+    "setup": ["ManageGuild"],
+    "manageOrg": ["ManageGuild", "Administrator"],
+    "admin": ["Administrator"]
+  }
+}
